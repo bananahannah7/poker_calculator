@@ -55,21 +55,44 @@ def hand_evaluator(cards):
     Need to look at poker hand, two cards in hand, 3-5 cards down. From there, we pick the best five cards of the seven possible.
     """
 
+    """
+    Hand rankings by score
+    9: Royal Flush (straight, flush, AKQJ10)
+    8: Straight Flush (straight, flush, need to know what highest card value is)
+    7: Four of a Kind (all four same card rank, need to know value)
+    6: Full House (three of a kind, pair, need to know values of each)
+    5: Flush (all five one suit, need to know values)
+    4: Straight (five in a row, need to know high card)
+    3: Three of a Kind (three of same value, need to know value)
+    2: Two Pair (two pairs, need to know values)
+    1: One Pair (one pair, need to know value)
+    0: High Card (purely value based)
+    
+    """
+
     if len(cards) != 5:
         return ValueError("We can only have a five card hand to evaluate.")
+    
+    sorted_cards = sorted(cards, key = lambda card: card.rank_value)
     
     ranks = [card.rank_value for card in cards]
     suits = [card.suit for card in cards]
 
-    flush = len(set(suits)) == 1 # this means all five are same suit
+    # how many of each rank, used for high, pair, 2 pair, 3 of kind, 4 of kind
+    rank_counts = Counter(ranks)
 
-    unique_ranks = sorted(set(ranks))
-    straight = False
-    straight_high = -1
+    # check for flush
+    flush = len(set(suits)) == 1
+
 
     # need one case for A-5 straight since A is at bottom not top
     # need one case for all other straights
     # might be worth making case for royal straight here? 
+    
+    straight = False
+    straight_high = -1
+
+
 
     # royal flush is straight and flush and A K Q J 10
     # use flush and straight and check for the five cards
