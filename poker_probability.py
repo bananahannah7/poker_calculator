@@ -1,4 +1,3 @@
-
 from collections import Counter
 from itertools import combinations
 from math import comb
@@ -166,15 +165,13 @@ def hand_evaluator(cards):
     return (0, sorted(ranks, reverse = True))
 
 
-def compare_hands(hand1, hand2):
+def compare_scores(score1, score2):
     """
     Compares two poker hands and returns:
-    1 if hand1 is better, 
-    -1 if hand2 is better,
+    1 if score1 is better, 
+    -1 if score2 is better,
     0 if equal
     """
-    score1 = hand_evaluator(hand1)
-    score2 = hand_evaluator(hand2)
 
     # compares type of hand
     if score1[0] > score2[0]:
@@ -191,7 +188,7 @@ def compare_hands(hand1, hand2):
             return 1
         
     # exact tie, only differs in suits
-    return 0
+    return 0    
 
 def find_best_five(cards):
     """ Finds the best five cards of seven (five down, two in hand) for you to play."""
@@ -210,7 +207,7 @@ def find_best_five(cards):
             best_hand = hand
             best_score = score
         else:
-            comparator = compare_hands(hand, best_hand)
+            comparator = compare_scores(score, best_score)
             if comparator > 0:
                 best_hand = hand
                 best_score = score
@@ -237,6 +234,7 @@ def probability_calculator(my_hand, community_cards, player_count):
     
 
     my_best_hand = find_best_five(my_hand + community_cards)
+    my_score = hand_evaluator(my_best_hand)
 
     # create deck, remove known cards
     full_deck = create_deck()
@@ -254,7 +252,8 @@ def probability_calculator(my_hand, community_cards, player_count):
     # check my hand against all opponent hands
     for opp_cards in combinations(remaining_deck, 2):
         opp_best_hand = find_best_five(list(opp_cards) + community_cards)
-        comparator = compare_hands(my_best_hand, opp_best_hand)
+        opp_score = hand_evaluator(opp_best_hand)
+        comparator = compare_scores(my_score, opp_score)
 
         if comparator > 0: # win
             wins += 1
@@ -337,7 +336,6 @@ def main():
     print(f"Number of players: {player_count}")
 
     print(f"Probability of winning: ({probability*100:.2f}%)")
-
 
 if __name__ == "__main__":
     main()
