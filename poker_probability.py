@@ -10,7 +10,7 @@ then one last card, and you make the best hand of five using the total possible 
 """
 SUITS = ["H", "D", "C", "S"] # hearts, diamonds, clubs, and spades
 RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"] # ace marked as highest for high card reasons
-
+# indexes 0 to 12 for 2 to 13/A
 
 class Card: 
     def __init__(self, rank, suit):
@@ -88,38 +88,96 @@ def hand_evaluator(cards):
     # need one case for A-5 straight since A is at bottom not top
     # need one case for all other straights
     # might be worth making case for royal straight here? 
-    
+
     straight = False
-    straight_high = -1
+    straight_high = -1 # default fails
 
+    if len(set(ranks)) == 5 and max(ranks) - min(ranks) == 4:
+        straight = True
+        straight_high = max(ranks)
 
+    elif set(ranks) == {0, 1, 2, 3, 12}: # 12 is ace
+        straight = True
+        straight_high = 3
 
     # royal flush is straight and flush and A K Q J 10
     # use flush and straight and check for the five cards
 
+    if straight and flush and (12 in ranks) and (straight_high == 12):
+        return (9, []) # no rank marker, this is best possible hand
+
     # straight flush is straight and flush
     # use flush and straight
+
+    if straight and flush: 
+        return (8, [straight_high])
 
     # four of a kind
     # check for sorted list, four of ranks are same
 
+    for rank, count in rank_counts.items():
+        if count == 4:
+            tie_breaker = [val for val in ranks if val != rank][0]
+            return (7, [rank, tie_breaker])
+
     # full house (three of a kind and pair)
     # check for sorted list, three of ranks are same, two of ranks are same
 
+    three_val = None
+    pair_val = None
+    for rank, count, in rank_counts.items():
+        if count == 3: 
+            three_val = rank
+        elif count == 2:
+            pair_val = rank
+    
+    if three_val is not None and pair_val is not None:
+        return (6, [three_val, pair_val])
 
     # flush
     # use the flush marker
 
+    if flush:
+        return (5, ranks)
+
     # straight
+
+    if straight:
+        return (4, [straight_high])
+    
 
     # three of a kind
     # check for sorted list, three of ranks are same
+
+    for rank_count in rank_counts.items():
+        if count == 3:
+            other_cards = sorted([val for val in ranks if val != rank], reverse = True)
+            return (3, [rank] + other_cards)
     
     # two pair
     # check for sorted list, two of ranks are same for two different ranks
+    pairs = []
+    for rank, count in rank_counts.items(): 
+        if count == 2:
+            pairs.append(rank)
+
+    if len(pairs) == 2:
+        pairs.sort(reverse = True)
+        tie_breaker = [val for val in ranks if val not in pairs][0]
+        return (2, pairs + [tie_breaker])
+
 
     # one pair
     # check for sorted list, two of ranks are same
+
+    for rank, count in rank_counts.items():
+        if count == 2:
+            other_cards = sorted([val for val in ranks if val != ranks], reverse = True)
+
+    # high card
+
+    return (0, ranks)
+
 
 def compare_hands(hand1, hand2):
     score1 = hand_evaluator(hand1)
