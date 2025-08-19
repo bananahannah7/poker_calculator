@@ -1,6 +1,8 @@
 import random
 from collections import Counter
 
+from itertools import combinations
+
 """
 This project takes in a series of cards provided and calculates your chance of having the best hand of the players. 
 It depends on what cards you have, what cards are down, and how many people are playing (and how many cards still need to be put down).
@@ -47,8 +49,6 @@ def card_evaluator(card_str):
     if suit not in SUITS: 
         raise ValueError(f"Invalid suit: {suit}. Valid suits are: H, D, C, S")
     return Card(rank, suit)
-
-# not sure what to call the making of the hand
 
 def hand_evaluator(cards):
     """
@@ -144,12 +144,11 @@ def hand_evaluator(cards):
 
     if straight:
         return (4, [straight_high])
-    
 
     # three of a kind
     # check for sorted list, three of ranks are same
 
-    for rank_count in rank_counts.items():
+    for rank, count in rank_counts.items():
         if count == 3:
             other_cards = sorted([val for val in ranks if val != rank], reverse = True)
             return (3, [rank] + other_cards)
@@ -173,15 +172,55 @@ def hand_evaluator(cards):
     for rank, count in rank_counts.items():
         if count == 2:
             other_cards = sorted([val for val in ranks if val != ranks], reverse = True)
+            return (1, [rank] + other_cards)
+
 
     # high card
 
-    return (0, ranks)
+    return (0, sorted(ranks, reverse = True))
 
 
 def compare_hands(hand1, hand2):
     score1 = hand_evaluator(hand1)
     score2 = hand_evaluator(hand2)
 
+    if score1[0] > score2[0]:
+        return 1
+    
+    elif score1[0] < score2[0]:
+        return -1
+    
+    for val1, val2 in zip(score1[1], score2[1]):
+        if val1 < val2:
+            return -1
+        if val2 > val1:
+            return 1
+        
+    # exact tie, only diff in suits, most likely
     return 0
+
+def find_best_five(cards):
+    """ Finds the best five cards of seven (five down, two in hand) for you to play."""
+
+    if len(cards) < 5: 
+        raise ValueError("Need at least 5 cards to make hand")
+    
+    best_hand = None
+    best_score = (-1, []) # dummy low score, empty tie breakers
+
+    for five_cards in combinations(cards, 5):
+        hand = list(five_cards)
+        score = hand_evaluator(hand)
+
+        if best_hand is None:
+            best_hand = hand
+            best_score = score
+        else:
+            comparator = compare_hands(score, best_score)
+            if comparator > 0:
+                best_hand = hand
+                best_score = score
+
+    return best_hand
+
 
