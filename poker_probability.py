@@ -1,7 +1,9 @@
-import random
+# import random
 from collections import Counter
 
 from itertools import combinations
+
+from math import comb
 
 """
 This project takes in a series of cards provided and calculates your chance of having the best hand of the players. 
@@ -45,7 +47,7 @@ def card_evaluator(card_str):
     rank, suit = card_str[:-1].upper(), card_str[-1].upper()
 
     if rank not in RANKS: 
-        raise ValueError(f"Invalid rank: {rank}. Valid ranks are 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K")
+        raise ValueError(f"Invalid rank: {rank}. Valid ranks are 2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K, A")
     if suit not in SUITS: 
         raise ValueError(f"Invalid suit: {suit}. Valid suits are: H, D, C, S")
     return Card(rank, suit)
@@ -71,12 +73,12 @@ def hand_evaluator(cards):
     """
 
     if len(cards) != 5:
-        return ValueError("We can only have a five card hand to evaluate.")
+        raise ValueError("We can only have a five card hand to evaluate.")
     
-    sorted_cards = sorted(cards, key = lambda card: card.rank_value)
+    sorted_cards = sorted(cards, key = lambda card: card.rank_value, reverse = True)
     
-    ranks = [card.rank_value for card in cards]
-    suits = [card.suit for card in cards]
+    ranks = [card.rank_value for card in sorted_cards]
+    suits = [card.suit for card in sorted_cards]
 
     # how many of each rank, used for high, pair, 2 pair, 3 of kind, 4 of kind
     rank_counts = Counter(ranks)
@@ -171,7 +173,7 @@ def hand_evaluator(cards):
 
     for rank, count in rank_counts.items():
         if count == 2:
-            other_cards = sorted([val for val in ranks if val != ranks], reverse = True)
+            other_cards = sorted([val for val in ranks if val != rank], reverse = True)
             return (1, [rank] + other_cards)
 
 
@@ -193,7 +195,7 @@ def compare_hands(hand1, hand2):
     for val1, val2 in zip(score1[1], score2[1]):
         if val1 < val2:
             return -1
-        if val2 > val1:
+        if val2 < val1:
             return 1
         
     # exact tie, only diff in suits, most likely
@@ -216,11 +218,65 @@ def find_best_five(cards):
             best_hand = hand
             best_score = score
         else:
-            comparator = compare_hands(score, best_score)
+            comparator = compare_hands(hand, best_hand)
             if comparator > 0:
                 best_hand = hand
                 best_score = score
 
     return best_hand
 
+def probability_calculator(my_hand, community_cards, player_count):
 
+    """ Looks at chance of winning with all five cards down, using number of players, my hand, and cards down to find which hands can beat mine of total possible hands."""
+
+
+    if len(my_hand) != 2:
+        raise ValueError("You need exactly two cards in your hand")
+    
+    if len(community_cards) != 5:
+        raise ValueError("All 5 community cards must be known in current functionality")
+    
+
+    my_best_hand = find_best_five(my_hand + community_cards)
+
+    full_deck = create_deck()
+    known_cards = my_hand + community_cards
+
+    remaining_deck = [card for card in full_deck
+                      if not any(card.rank == known.rank and card.suit == known.suit for known in known_cards)]
+    
+    opp_hands_count = comb(len(remaining_deck), 2)
+
+    wins = 0
+    ties = 0
+
+    for opp_cards in combinations(remaining_deck, 2):
+        opp_best_hand = find_best_five(list(opp_cards) + community_cards)
+        comparator = compare_hands(my_best_hand, opp_best_hand)
+
+        if comparator > 0: # win
+            wins += 1
+        elif comparator == 0:
+            ties += 1
+
+    win_probability = (wins + ties/2) / opp_hands_count
+
+    win_probability = win_probability ** (player_count - 1)
+
+    return win_probability
+
+
+
+def main(): 
+    my_hand = [card_evaluator("9S"), card_evaluator("8S")]
+    community_cards = [card_evaluator("QS"), card_evaluator("JS"), card_evaluator("10S"), card_evaluator("2H"), card_evaluator("3C")]
+
+
+    player_count = 4
+
+    probability = probability_calculator(my_hand, community_cards, player_count)
+    print(f"Probability of winning: ({probability*100:.2f}%)")
+
+
+if __name__ == "__main__":
+    main()
