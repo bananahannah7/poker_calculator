@@ -1,13 +1,13 @@
-# import random
+
 from collections import Counter
-
 from itertools import combinations
-
 from math import comb
 
 """
-This project takes in a series of cards provided and calculates your chance of having the best hand of the players. 
-It depends on what cards you have, what cards are down, and how many people are playing (and how many cards still need to be put down).
+Texas Hold'em Poker Probability Calculator
+
+This program takes in a series of cards provided and calculates your chance of having the best hand of the players. 
+It depends on what cards you have, what cards are down, and how many people are playing.
 
 It works specifically for texas hold 'em poker where you get two cards in your hand and three cards are placed down, then one more, 
 then one last card, and you make the best hand of five using the total possible seven cards. 
@@ -39,9 +39,15 @@ class Card:
         return False
     
 def create_deck():
+    """Creates a 52-card deck."""
     return [Card(rank, suit) for rank in RANKS for suit in SUITS]
 
 def card_evaluator(card_str):
+    """
+    Takes string representation of card and makes it a Card object. 
+    Input format is rank then suit. 
+    """
+
     if len(card_str) < 2 or len(card_str) > 3:
         raise ValueError(f"Invalid format of card: {card_str}. Use format like AS or 10D)")
     rank, suit = card_str[:-1].upper(), card_str[-1].upper()
@@ -54,10 +60,8 @@ def card_evaluator(card_str):
 
 def hand_evaluator(cards):
     """
-    Need to look at poker hand, two cards in hand, 3-5 cards down. From there, we pick the best five cards of the seven possible.
-    """
+    Evaluates a 5-card poker hand to return score and tie-breaker information. 
 
-    """
     Hand rankings by score
     9: Royal Flush (straight, flush, AKQJ10)
     8: Straight Flush (straight, flush, need to know what highest card value is)
@@ -70,6 +74,7 @@ def hand_evaluator(cards):
     1: One Pair (one pair, need to know value)
     0: High Card (purely value based)
     
+    Returns a tuple (score, [tie_breakers])
     """
 
     if len(cards) != 5:
@@ -80,17 +85,13 @@ def hand_evaluator(cards):
     ranks = [card.rank_value for card in sorted_cards]
     suits = [card.suit for card in sorted_cards]
 
-    # how many of each rank, used for high, pair, 2 pair, 3 of kind, 4 of kind
+    # Count occurrences of each rank
     rank_counts = Counter(ranks)
 
     # check for flush
     flush = len(set(suits)) == 1
 
-
-    # need one case for A-5 straight since A is at bottom not top
-    # need one case for all other straights
-    # might be worth making case for royal straight here? 
-
+    # checks for straight
     straight = False
     straight_high = -1 # default fails
 
@@ -98,33 +99,25 @@ def hand_evaluator(cards):
         straight = True
         straight_high = max(ranks)
 
-    elif set(ranks) == {0, 1, 2, 3, 12}: # 12 is ace
+    elif set(ranks) == {0, 1, 2, 3, 12}: # 12 is ace, checks for A-5 case
         straight = True
         straight_high = 3
 
-    # royal flush is straight and flush and A K Q J 10
-    # use flush and straight and check for the five cards
-
+    # Royal flush (straight, flush, A, K, Q, J, 10)
     if straight and flush and (12 in ranks) and (straight_high == 12):
         return (9, []) # no rank marker, this is best possible hand
 
-    # straight flush is straight and flush
-    # use flush and straight
-
+    # Straight flush (straight and flush)
     if straight and flush: 
         return (8, [straight_high])
 
-    # four of a kind
-    # check for sorted list, four of ranks are same
-
+    # Four of a kind
     for rank, count in rank_counts.items():
         if count == 4:
             tie_breaker = [val for val in ranks if val != rank][0]
             return (7, [rank, tie_breaker])
 
-    # full house (three of a kind and pair)
-    # check for sorted list, three of ranks are same, two of ranks are same
-
+    # Full house (three of a kind and pair)
     three_val = None
     pair_val = None
     for rank, count, in rank_counts.items():
@@ -137,26 +130,20 @@ def hand_evaluator(cards):
         return (6, [three_val, pair_val])
 
     # flush
-    # use the flush marker
-
     if flush:
         return (5, ranks)
 
     # straight
-
     if straight:
         return (4, [straight_high])
 
     # three of a kind
-    # check for sorted list, three of ranks are same
-
     for rank, count in rank_counts.items():
         if count == 3:
             other_cards = sorted([val for val in ranks if val != rank], reverse = True)
             return (3, [rank] + other_cards)
     
     # two pair
-    # check for sorted list, two of ranks are same for two different ranks
     pairs = []
     for rank, count in rank_counts.items(): 
         if count == 2:
@@ -169,8 +156,6 @@ def hand_evaluator(cards):
 
 
     # one pair
-    # check for sorted list, two of ranks are same
-
     for rank, count in rank_counts.items():
         if count == 2:
             other_cards = sorted([val for val in ranks if val != rank], reverse = True)
@@ -178,27 +163,34 @@ def hand_evaluator(cards):
 
 
     # high card
-
     return (0, sorted(ranks, reverse = True))
 
 
 def compare_hands(hand1, hand2):
+    """
+    Compares two poker hands and returns:
+    1 if hand1 is better, 
+    -1 if hand2 is better,
+    0 if equal
+    """
     score1 = hand_evaluator(hand1)
     score2 = hand_evaluator(hand2)
 
+    # compares type of hand
     if score1[0] > score2[0]:
         return 1
     
     elif score1[0] < score2[0]:
         return -1
     
+    # looks at tie breakers and values if same type hand
     for val1, val2 in zip(score1[1], score2[1]):
         if val1 < val2:
             return -1
         if val2 < val1:
             return 1
         
-    # exact tie, only diff in suits, most likely
+    # exact tie, only differs in suits
     return 0
 
 def find_best_five(cards):
@@ -227,7 +219,14 @@ def find_best_five(cards):
 
 def probability_calculator(my_hand, community_cards, player_count):
 
-    """ Looks at chance of winning with all five cards down, using number of players, my hand, and cards down to find which hands can beat mine of total possible hands."""
+    """ Looks at chance of winning with all five cards down, using number of players, 
+    my hand, and cards down to find which hands can beat mine of total possible hands.
+    Inputs: my_hand (two cards)
+    community_cards (five cards)    
+    player_count (number of players in game as integer)
+    
+    Returns: chances of winning
+    """
 
 
     if len(my_hand) != 2:
@@ -239,17 +238,20 @@ def probability_calculator(my_hand, community_cards, player_count):
 
     my_best_hand = find_best_five(my_hand + community_cards)
 
+    # create deck, remove known cards
     full_deck = create_deck()
     known_cards = my_hand + community_cards
 
     remaining_deck = [card for card in full_deck
                       if not any(card.rank == known.rank and card.suit == known.suit for known in known_cards)]
     
+    # calculate total number of opponent hands
     opp_hands_count = comb(len(remaining_deck), 2)
 
     wins = 0
     ties = 0
 
+    # check my hand against all opponent hands
     for opp_cards in combinations(remaining_deck, 2):
         opp_best_hand = find_best_five(list(opp_cards) + community_cards)
         comparator = compare_hands(my_best_hand, opp_best_hand)
@@ -259,8 +261,10 @@ def probability_calculator(my_hand, community_cards, player_count):
         elif comparator == 0:
             ties += 1
 
+    # calculate chance against one opponent
     win_probability = (wins + ties/2) / opp_hands_count
 
+    # calculate chance against multiple opponents (removes self)
     win_probability = win_probability ** (player_count - 1)
 
     return win_probability
@@ -269,13 +273,14 @@ def probability_calculator(my_hand, community_cards, player_count):
 
 def main(): 
 
+    # intro script
     print("Poker Probability Calculator for Texas Hold'em")
     print("----------------------------------------------")
 
     print("\nEnter your two cards, with the card rank then suit (H, D, S, C). For example, AS for Ace of Spades, 10D for D of Diamonds.")
     
+    # get player hand
     my_hand = []
-
     while len(my_hand) < 2:
         try:
             card_str = input(f"Card {len(my_hand) + 1}: ")
@@ -287,6 +292,7 @@ def main():
         except ValueError as error:
             print(f"Invalid card: {error}")
 
+    # get community cards
     print("\nEnter the five community cards: ")
     community_cards = []
 
@@ -302,6 +308,7 @@ def main():
         except ValueError as error:
             print(f"Invalid card: {error}")
 
+    # get player count
     player_count = 0
     while player_count < 2 or player_count > 10:
         try: 
@@ -314,12 +321,13 @@ def main():
         except ValueError as error:
             print(f"{error} was invalid. Please enter a valid number.")
 
+    # calculate results
     best_hand = find_best_five(my_hand + community_cards)
     hand_score = hand_evaluator(best_hand)
 
     hand_types = ["High Card", "One Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Straight Flush", "Royal Flush"]
 
-
+    # print results
     print("\nCalculating probability of winning...")
     probability = probability_calculator(my_hand, community_cards, player_count)
     
