@@ -5,7 +5,7 @@ from math import comb
 import tkinter as tk
 from tkinter import messagebox
 import os
-from PIL import Image
+from PIL import Image, ImageTk
 
 """
 Texas Hold'em Poker Probability Calculator
@@ -21,6 +21,14 @@ RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"] # ace
 # indexes 0 to 12 for 2 to 13/A
 SUIT_NAMES = {"H": "Hearts", "D": "Diamonds", "C": "Clubs", "S": "Spades"}
 RANK_NAMES = {"2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9", "10": "10", "J": "Jack", "Q": "Queen", "K": "King", "A": "Ace"} # ace marked as highest for high card reasons
+
+
+POKER_GREEN = "#35654d"
+POKER_TRIM = "#2d3e40"
+POKER_WOOD = "#8b5a2b"
+TEXT_COLOR = "#FFFFFF" 
+
+
 
 class Card: 
     def __init__(self, rank, suit):
@@ -280,40 +288,77 @@ class PokerApp:
         self.root = root
         self.root.title("Poker Porbability Calculator")
         self.root.geometry("1200x800")
-        self.root.configure(bg ="#FFFFFF")
+        self.root.configure(bg = POKER_GREEN)
         
         self.my_hand = []
         self.community_cards = []
         self.selected_cards = []
         self.card_images = {}
 
+        # create app
+        self.setup_frames()
+
         # need to set up all card decks
         self.load_card_deck()
 
         # need to pick number of players
-        self.select_player_count()
+        # self.select_player_count()
 
         # need to pick cards
-        self.select_cards()
+        # self.select_cards()
 
-        self.status_label.config(text = "Select cards")
+        # self.status_label.config(text = "Select two cards for your hand")
+
+    def setup_frames(self):
+        """Set up application frames"""
+        self.left_frame = tk.Frame(self.root, bg = POKER_GREEN)
+        self.left_frame.pack(side = tk.LEFT, fill = tk.BOTH, expand = True, padx = 10, pady = 10)
+
+        self.right_frame = tk.Frame(self.root, bg = POKER_GREEN)
+        self.right_frame.pack(side = tk.RIGHT, fill = tk.BOTH, expand = True, padx = 10, pady = 10)
+
+        self.title_frame = tk.Frame(self.left_frame, bg = POKER_GREEN)
+        self.title_frame.pack(fill = tk.X, pady = 5)
+
+        tk.Label(
+            self.title_frame,
+            text = "Poker Probability Calculator", 
+            font = ("Arial", 24, "bold"),
+            bg = POKER_GREEN, 
+            fg = TEXT_COLOR
+
+        ).pack(pady = 5)
+
+
 
     def load_card_deck(self):
+        """Gets all card images from cards folder."""
         self.card_images_dict = {}
-
 
         card_size = (80, 120)
 
         try: 
             back_path = "cards/Suit=Other, Number=Back Blue.png"
             back_img = Image.open(back_path).resize(card_size)
-            self.card_back = Image.PhotoImage(back_img)
+            self.card_back = ImageTk.PhotoImage(back_img)
         
         except Exception as error:
             print(f"Warning: Could not load image: {error}")
-            back_img = Image.new("RGB", card_size, color = "blue")
-            self.card_back = Image.PhotoImage(back_img)
+            def_img = Image.new("RGB", card_size, color = "blue")
+            self.card_back = ImageTk.PhotoImage(def_img)
 
+        for suit in SUITS: 
+            suit_name = SUIT_NAMES[suit]
+            for rank in RANKS: 
+                rank_name = RANK_NAMES[rank]
+                try: 
+                    card_path = f"cards/Suit={suit_name}, Number={rank_name}.png"
+                    front = Image.open(card_path).resize(card_size)
+                    self.card_images_dict[(rank, suit)] = ImageTk.PhotoImage(front)
+                except Exception as error: 
+                    print(f"Warning, couldn't load image for {rank}{suit}: {error}")
+                    img = Image.new("RGB", card_size, color = "gray")
+                    self.card_images_dict[(rank, suit)] = ImageTk.PhotoImage(img)
 
 # def main(): 
 
@@ -381,6 +426,12 @@ class PokerApp:
 #     print(f"Number of players: {player_count}")
 
 #     print(f"Probability of winning: ({probability*100:.2f}%)")
+
+
+def main():
+    root = tk.Tk()
+    app = PokerApp(root)
+    root.mainloop()
 
 if __name__ == "__main__":
     main()
