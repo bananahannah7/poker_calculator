@@ -2,6 +2,11 @@ from collections import Counter
 from itertools import combinations
 from math import comb
 
+import tkinter as tk
+from tkinter import messagebox
+import os
+from PIL import Image
+
 """
 Texas Hold'em Poker Probability Calculator
 
@@ -14,6 +19,8 @@ then one last card, and you make the best hand of five using the total possible 
 SUITS = ["H", "D", "C", "S"] # hearts, diamonds, clubs, and spades
 RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"] # ace marked as highest for high card reasons
 # indexes 0 to 12 for 2 to 13/A
+SUIT_NAMES = {"H": "Hearts", "D": "Diamonds", "C": "Clubs", "S": "Spades"}
+RANK_NAMES = {"2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9", "10": "10", "J": "Jack", "Q": "Queen", "K": "King", "A": "Ace"} # ace marked as highest for high card reasons
 
 class Card: 
     def __init__(self, rank, suit):
@@ -232,7 +239,6 @@ def probability_calculator(my_hand, community_cards, player_count):
     if len(community_cards) != 5:
         raise ValueError("All 5 community cards must be known in current functionality")
     
-
     my_best_hand = find_best_five(my_hand + community_cards)
     my_score = hand_evaluator(my_best_hand)
 
@@ -269,73 +275,112 @@ def probability_calculator(my_hand, community_cards, player_count):
     return win_probability
 
 
+class PokerApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Poker Porbability Calculator")
+        self.root.geometry("1200x800")
+        self.root.configure(bg ="#FFFFFF")
+        
+        self.my_hand = []
+        self.community_cards = []
+        self.selected_cards = []
+        self.card_images = {}
 
-def main(): 
+        # need to set up all card decks
+        self.load_card_deck()
 
-    # intro script
-    print("Poker Probability Calculator for Texas Hold'em")
-    print("----------------------------------------------")
+        # need to pick number of players
+        self.select_player_count()
 
-    print("\nEnter your two cards, with the card rank then suit (H, D, S, C). For example, AS for Ace of Spades, 10D for D of Diamonds.")
-    
-    # get player hand
-    my_hand = []
-    while len(my_hand) < 2:
-        try:
-            card_str = input(f"Card {len(my_hand) + 1}: ")
-            card = card_evaluator(card_str)
-            if card in my_hand:
-                print("This card has already been entered. Please enter a different card.")
-                continue
-            my_hand.append(card)
-        except ValueError as error:
-            print(f"Invalid card: {error}")
+        # need to pick cards
+        self.select_cards()
 
-    # get community cards
-    print("\nEnter the five community cards: ")
-    community_cards = []
+        self.status_label.config(text = "Select cards")
 
-    while len(community_cards) < 5:
+    def load_card_deck(self):
+        self.card_images_dict = {}
+
+
+        card_size = (80, 120)
+
         try: 
-            card_str = input(f"Community card{len(community_cards) + 1}: ")
-            card = card_evaluator(card_str)
-            if card in my_hand or card in community_cards:
-                print("This card has already been entered. Please enter a different card.")
-                continue
+            back_path = "cards/Suit=Other, Number=Back Blue.png"
+            back_img = Image.open(back_path).resize(card_size)
+            self.card_back = Image.PhotoImage(back_img)
+        
+        except Exception as error:
+            print(f"Warning: Could not load image: {error}")
+            back_img = Image.new("RGB", card_size, color = "blue")
+            self.card_back = Image.PhotoImage(back_img)
 
-            community_cards.append(card)
-        except ValueError as error:
-            print(f"Invalid card: {error}")
 
-    # get player count
-    player_count = 0
-    while player_count < 2 or player_count > 10:
-        try: 
-            player_count = int(input("\nEnter the number of players, including yourself: "))
-            if player_count < 2:
-                print("There must be at least 2 players.")
-            elif player_count > 10:
-                print("There must not be more than 10 players.")
+# def main(): 
 
-        except ValueError as error:
-            print(f"{error} was invalid. Please enter a valid number.")
+#     # intro script
+#     print("Poker Probability Calculator for Texas Hold'em")
+#     print("----------------------------------------------")
 
-    # calculate results
-    best_hand = find_best_five(my_hand + community_cards)
-    hand_score = hand_evaluator(best_hand)
-
-    hand_types = ["High Card", "One Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Straight Flush", "Royal Flush"]
-
-    # print results
-    print("\nCalculating probability of winning...")
-    probability = probability_calculator(my_hand, community_cards, player_count)
+#     print("\nEnter your two cards, with the card rank then suit (H, D, S, C). For example, AS for Ace of Spades, 10D for D of Diamonds.")
     
-    print(f"Your hand: {my_hand}")
-    print(f"Community cards: {community_cards}")
-    print(f"Your best five-card hand: {best_hand} ({hand_types[hand_score[0]]})")
-    print(f"Number of players: {player_count}")
+#     # get player hand
+#     my_hand = []
+#     while len(my_hand) < 2:
+#         try:
+#             card_str = input(f"Card {len(my_hand) + 1}: ")
+#             card = card_evaluator(card_str)
+#             if card in my_hand:
+#                 print("This card has already been entered. Please enter a different card.")
+#                 continue
+#             my_hand.append(card)
+#         except ValueError as error:
+#             print(f"Invalid card: {error}")
 
-    print(f"Probability of winning: ({probability*100:.2f}%)")
+#     # get community cards
+#     print("\nEnter the five community cards: ")
+#     community_cards = []
+
+#     while len(community_cards) < 5:
+#         try: 
+#             card_str = input(f"Community card{len(community_cards) + 1}: ")
+#             card = card_evaluator(card_str)
+#             if card in my_hand or card in community_cards:
+#                 print("This card has already been entered. Please enter a different card.")
+#                 continue
+
+#             community_cards.append(card)
+#         except ValueError as error:
+#             print(f"Invalid card: {error}")
+
+#     # get player count
+#     player_count = 0
+#     while player_count < 2 or player_count > 10:
+#         try: 
+#             player_count = int(input("\nEnter the number of players, including yourself: "))
+#             if player_count < 2:
+#                 print("There must be at least 2 players.")
+#             elif player_count > 10:
+#                 print("There must not be more than 10 players.")
+
+#         except ValueError as error:
+#             print(f"{error} was invalid. Please enter a valid number.")
+
+#     # calculate results
+#     best_hand = find_best_five(my_hand + community_cards)
+#     hand_score = hand_evaluator(best_hand)
+
+#     hand_types = ["High Card", "One Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Straight Flush", "Royal Flush"]
+
+#     # print results
+#     print("\nCalculating probability of winning...")
+#     probability = probability_calculator(my_hand, community_cards, player_count)
+    
+#     print(f"Your hand: {my_hand}")
+#     print(f"Community cards: {community_cards}")
+#     print(f"Your best five-card hand: {best_hand} ({hand_types[hand_score[0]]})")
+#     print(f"Number of players: {player_count}")
+
+#     print(f"Probability of winning: ({probability*100:.2f}%)")
 
 if __name__ == "__main__":
     main()
